@@ -143,31 +143,27 @@ class Message:
                 return ""
 
             if report != "":
-                text += "\n\n"
+                text += "\n"
 
             text += f"*{category} failures*:".ljust(line_length // 2).rjust(line_length // 2) + "\n"
-            text += "`"
 
             for idx, failure in enumerate(failures):
                 new_text = text
-                if idx > 0:
-                    new_text += "`\n`"
+                new_text += f"`{failure}`\n"
                 new_text += failure
-                if len(new_text) > target_max_len - len("[Truncated]") - 1:
-                    text = text + "[Truncated]"
+                if len(new_text) > target_max_len - len("[Truncated]\n"):
+                    text = text + "[Truncated]\n"
                     break
                 text = new_text
-
-            text += "`"
 
             return text
 
         report = ""
         for category, failures in category_failures.items():
-            max_len = MAX_ERROR_TEXT - len(report) - len("[Truncated]")
+            max_len = MAX_ERROR_TEXT - len(report) - len("\n[Truncated]")
             new_text = single_category_failures(category, failures, target_max_len=max_len, report=report)
             if len(new_text) > max_len:
-                report += "[Truncated]"
+                report += "\n[Truncated]"
                 break
             report += new_text
 
