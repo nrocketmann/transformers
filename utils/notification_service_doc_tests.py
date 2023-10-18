@@ -133,21 +133,43 @@ class Message:
 
     @property
     def category_failures(self) -> Dict:
+        MAX_ERROR_TEXT = 3000 - len("The following examples had failures:\n\n\n\n")
         line_length = 40
         category_failures = {k: v["failed"] for k, v in doc_test_results.items() if isinstance(v, dict)}
 
-        report = ""
-        for category, failures in category_failures.items():
+        def single_category_failures(category, failures, target_max_len, report):
+            text = ""
             if len(failures) == 0:
-                continue
+                return ""
 
             if report != "":
-                report += "\n\n"
+                text += "\n\n"
 
-            report += f"*{category} failures*:".ljust(line_length // 2).rjust(line_length // 2) + "\n"
-            report += "`"
-            report += "`\n`".join(failures)
-            report += "`"
+            text += f"*{category} failures*:".ljust(line_length // 2).rjust(line_length // 2) + "\n"
+            text += "`"
+
+            for idx, failure in enumerate(failures):
+                new_text = text
+                if idx > 0:
+                    new_text += "`\n`"
+                new_text += failure
+                if len(new_text) > target_max_len - len("[Truncated]") - 1:
+                    text = text + "[Truncated]"
+                    break
+                text = new_text
+
+            text += "`"
+
+            return text
+
+        report = ""
+        for category, failures in category_failures.items():
+            max_len = MAX_ERROR_TEXT - len(report) - len("[Truncated]")
+            new_text = single_category_failures(category, failures, target_max_len=max_len, report=report)
+            if len(new_text) > max_len:
+                report += "[Truncated]"
+                break
+            report += new_text
 
         return {
             "type": "section",
