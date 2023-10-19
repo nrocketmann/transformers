@@ -150,7 +150,6 @@ class Message:
             for idx, failure in enumerate(failures):
                 new_text = text
                 new_text += f"`{failure}`\n"
-                new_text += failure
                 if len(new_text) > target_max_len - len("[Truncated]\n"):
                     text = text + "[Truncated]\n"
                     break
