@@ -14,6 +14,8 @@
 
 import unittest
 
+from huggingface_hub import QuestionAnsweringOutputElement
+
 from transformers import (
     MODEL_FOR_QUESTION_ANSWERING_MAPPING,
     TF_MODEL_FOR_QUESTION_ANSWERING_MAPPING,
@@ -23,6 +25,7 @@ from transformers import (
 from transformers.data.processors.squad import SquadExample
 from transformers.pipelines import QuestionAnsweringArgumentHandler, pipeline
 from transformers.testing_utils import (
+    compare_pipeline_output_to_hub_spec,
     is_pipeline_test,
     nested_simplify,
     require_tf,
@@ -50,12 +53,27 @@ class QAPipelineTests(unittest.TestCase):
             config: model for config, model in tf_model_mapping.items() if config.__name__ not in _TO_SKIP
         }
 
-    def get_test_pipeline(self, model, tokenizer, processor):
+    def get_test_pipeline(
+        self,
+        model,
+        tokenizer=None,
+        image_processor=None,
+        feature_extractor=None,
+        processor=None,
+        torch_dtype="float32",
+    ):
         if isinstance(model.config, LxmertConfig):
             # This is an bimodal model, we need to find a more consistent way
             # to switch on those models.
             return None, None
-        question_answerer = QuestionAnsweringPipeline(model, tokenizer)
+        question_answerer = QuestionAnsweringPipeline(
+            model=model,
+            tokenizer=tokenizer,
+            feature_extractor=feature_extractor,
+            image_processor=image_processor,
+            processor=processor,
+            torch_dtype=torch_dtype,
+        )
 
         examples = [
             {"question": "Where was HuggingFace founded ?", "context": "HuggingFace was founded in Paris."},
@@ -117,6 +135,8 @@ class QAPipelineTests(unittest.TestCase):
         self.assertEqual(
             outputs, [{"answer": ANY(str), "start": ANY(int), "end": ANY(int), "score": ANY(float)} for i in range(20)]
         )
+        for single_output in outputs:
+            compare_pipeline_output_to_hub_spec(single_output, QuestionAnsweringOutputElement)
 
         # Very long context require multiple features
         outputs = question_answerer(
@@ -198,17 +218,14 @@ class QAPipelineTests(unittest.TestCase):
             "question-answering",
             model="KoichiYasuoka/deberta-base-japanese-aozora-ud-head",
         )
-        output = question_answerer(question="国語", context="全学年にわたって小学校の国語の教科書に挿し絵が用いられている")
+        output = question_answerer(question="国語", context="全学年にわたって小学校の国語の教科書に挿し絵が用いられている")  # fmt: skip
 
         # Wrong answer, the whole text is identified as one "word" since the tokenizer does not include
         # a pretokenizer
-        self.assertEqual(
-            nested_simplify(output),
-            {"score": 1.0, "start": 0, "end": 30, "answer": "全学年にわたって小学校の国語の教科書に挿し絵が用いられている"},
-        )
+        self.assertEqual(nested_simplify(output),{"score": 1.0, "start": 0, "end": 30, "answer": "全学年にわたって小学校の国語の教科書に挿し絵が用いられている"})  # fmt: skip
 
         # Disable word alignment
-        output = question_answerer(question="国語", context="全学年にわたって小学校の国語の教科書に挿し絵が用いられている", align_to_words=False)
+        output = question_answerer(question="国語", context="全学年にわたって小学校の国語の教科書に挿し絵が用いられている", align_to_words=False)  # fmt: skip
         self.assertEqual(
             nested_simplify(output),
             {"score": 1.0, "start": 15, "end": 18, "answer": "教科書"},

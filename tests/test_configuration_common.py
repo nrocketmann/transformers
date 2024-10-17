@@ -20,10 +20,10 @@ import tempfile
 
 from transformers import is_torch_available
 
-from .test_configuration_utils import config_common_kwargs
+from .utils.test_configuration_utils import config_common_kwargs
 
 
-class ConfigTester(object):
+class ConfigTester:
     def __init__(self, parent, config_class=None, has_text_modality=True, common_properties=None, **kwargs):
         self.parent = parent
         self.config_class = config_class
@@ -95,6 +95,9 @@ class ConfigTester(object):
             config_second = self.config_class.from_pretrained(tmpdirname)
 
         self.parent.assertEqual(config_second.to_dict(), config_first.to_dict())
+
+        with self.parent.assertRaises(OSError):
+            self.config_class.from_pretrained(f".{tmpdirname}")
 
     def create_and_test_config_from_and_save_pretrained_subfolder(self):
         config_first = self.config_class(**self.inputs_dict)

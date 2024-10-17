@@ -21,7 +21,7 @@ from transformers.pipelines import VideoClassificationPipeline, pipeline
 from transformers.testing_utils import (
     is_pipeline_test,
     nested_simplify,
-    require_decord,
+    require_av,
     require_tf,
     require_torch,
     require_torch_or_tf,
@@ -34,15 +34,31 @@ from .test_pipelines_common import ANY
 @is_pipeline_test
 @require_torch_or_tf
 @require_vision
-@require_decord
+@require_av
 class VideoClassificationPipelineTests(unittest.TestCase):
     model_mapping = MODEL_FOR_VIDEO_CLASSIFICATION_MAPPING
 
-    def get_test_pipeline(self, model, tokenizer, processor):
+    def get_test_pipeline(
+        self,
+        model,
+        tokenizer=None,
+        image_processor=None,
+        feature_extractor=None,
+        processor=None,
+        torch_dtype="float32",
+    ):
         example_video_filepath = hf_hub_download(
             repo_id="nateraw/video-demo", filename="archery.mp4", repo_type="dataset"
         )
-        video_classifier = VideoClassificationPipeline(model=model, image_processor=processor, top_k=2)
+        video_classifier = VideoClassificationPipeline(
+            model=model,
+            tokenizer=tokenizer,
+            feature_extractor=feature_extractor,
+            image_processor=image_processor,
+            processor=processor,
+            torch_dtype=torch_dtype,
+            top_k=2,
+        )
         examples = [
             example_video_filepath,
             "https://huggingface.co/datasets/nateraw/video-demo/resolve/main/archery.mp4",
@@ -94,5 +110,6 @@ class VideoClassificationPipelineTests(unittest.TestCase):
         )
 
     @require_tf
+    @unittest.skip
     def test_small_model_tf(self):
         pass
