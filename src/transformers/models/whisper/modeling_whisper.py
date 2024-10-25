@@ -1066,7 +1066,7 @@ class WhisperEncoder(WhisperPreTrainedModel):
                 else:
                     layer_outputs = encoder_layer(
                         hidden_states,
-                        None,
+                        attention_mask,
                         layer_head_mask=(head_mask[idx] if head_mask is not None else None),
                         output_attentions=output_attentions,
                     )
