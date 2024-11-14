@@ -12,7 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" Testing suite for the PyTorch Wav2Vec2-Conformer model. """
+"""Testing suite for the PyTorch Wav2Vec2-Conformer model."""
+
 import math
 import tempfile
 import unittest
@@ -21,7 +22,14 @@ import numpy as np
 from datasets import load_dataset
 
 from transformers import Wav2Vec2ConformerConfig, is_torch_available
-from transformers.testing_utils import is_pt_flax_cross_test, require_torch, require_torch_gpu, slow, torch_device
+from transformers.testing_utils import (
+    is_pt_flax_cross_test,
+    require_torch,
+    require_torch_accelerator,
+    require_torch_fp16,
+    slow,
+    torch_device,
+)
 
 from ...test_configuration_common import ConfigTester
 from ...test_modeling_common import (
@@ -468,12 +476,14 @@ class Wav2Vec2ConformerModelTest(ModelTesterMixin, PipelineTesterMixin, unittest
         config_and_inputs = self.model_tester.prepare_config_and_inputs()
         self.model_tester.create_and_check_model_with_adapter_proj_dim(*config_and_inputs)
 
-    @require_torch_gpu
+    @require_torch_accelerator
+    @require_torch_fp16
     def test_model_float16_with_relative(self):
         config_and_inputs = self.model_tester.prepare_config_and_inputs(position_embeddings_type="relative")
         self.model_tester.create_and_check_model_float16(*config_and_inputs)
 
-    @require_torch_gpu
+    @require_torch_accelerator
+    @require_torch_fp16
     def test_model_float16_with_rotary(self):
         config_and_inputs = self.model_tester.prepare_config_and_inputs(position_embeddings_type="rotary")
         self.model_tester.create_and_check_model_float16(*config_and_inputs)
@@ -502,32 +512,29 @@ class Wav2Vec2ConformerModelTest(ModelTesterMixin, PipelineTesterMixin, unittest
         config_and_inputs = self.model_tester.prepare_config_and_inputs()
         self.model_tester.check_labels_out_of_vocab(*config_and_inputs)
 
-    # Wav2Vec2Conformer has no inputs_embeds
+    @unittest.skip(reason="Wav2Vec2Conformer has not inputs_embeds")
     def test_inputs_embeds(self):
         pass
 
-    # `input_ids` is renamed to `input_values`
+    @unittest.skip(reason="Wav2Vec2Conformer has input_values instead of input_ids")
     def test_forward_signature(self):
         pass
 
-    # Wav2Vec2Conformer cannot resize token embeddings
-    # since it has no tokens embeddings
+    @unittest.skip(reason="Wav2Vec2Conformer has not token embeddings")
     def test_resize_tokens_embeddings(self):
         pass
 
-    # Wav2Vec2Conformer has no inputs_embeds
-    # and thus the `get_input_embeddings` fn
-    # is not implemented
-    def test_model_common_attributes(self):
+    @unittest.skip(reason="Wav2Vec2Conformer has not inputs_embeds")
+    def test_model_get_set_embeddings(self):
         pass
 
     @is_pt_flax_cross_test
-    # non-robust architecture does not exist in Flax
+    @unittest.skip(reason="Non-robust architecture does not exist in Flax")
     def test_equivalence_flax_to_pt(self):
         pass
 
     @is_pt_flax_cross_test
-    # non-robust architecture does not exist in Flax
+    @unittest.skip(reason="Non-robust architecture does not exist in Flax")
     def test_equivalence_pt_to_flax(self):
         pass
 
